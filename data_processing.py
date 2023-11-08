@@ -117,8 +117,9 @@ tbj1f1 = tbj1.filter(lambda x: float(x['passes']) > 100)\
     .filter(lambda x: float(x['minutes']) < 200)\
     .filter(lambda x: re.search("ai", x['team']))
 print('Player on a team with “ia” in the team name played less than 200 minutes and made more than 100 passes')
-print(tbj1f1, '\n')
+print(tbj1f1.select(['team', 'surname', 'position']), '\n')
 
+# The average number of games played for teams ranking below 10 versus teams ranking above or equal 10
 tbj2f1 = tbj1.filter(lambda x: int(x['ranking']) < 10).aggregate(
     lambda x: sum(x)/len(x), 'games')
 tbj2f2 = tbj1.filter(lambda x: int(x['ranking']) >= 10).aggregate(
@@ -126,6 +127,15 @@ tbj2f2 = tbj1.filter(lambda x: int(x['ranking']) >= 10).aggregate(
 print('The average number of games played for teams ranking below 10 versus teams ranking above or equal 10')
 print('Below 10:', tbj2f1)
 print('Above or equal 10:', tbj2f2, '\n')
+
+# The average number of passes made by forwards versus by midfielders
+tbj3f1 = tbj1.filter(lambda x: x['position'] == 'forward').aggregate(
+    lambda x: sum(x)/len(x), 'passes')
+tbj3f2 = tbj1.filter(lambda x: x['position'] == 'midfielder').aggregate(
+    lambda x: sum(x)/len(x), 'passes')
+print('The average number of passes made by forwards versus by midfielders')
+print('Forward:', tbj3f1)
+print('Midfielder:', tbj3f2, '\n')
 
 # The average fare paid by passengers in the first class versus in the third class
 tb3 = my_DB.search('titanic')
@@ -139,9 +149,9 @@ print('Third class:', tb3f2, '\n')
 
 # The survival rate of male versus female passengers
 tb3f3 = tb3.filter(lambda x: x['gender'] == 'M').aggregate_str(
-    lambda x: len(x)/len([y for y in x if y == 'yes']), 'survived')
+    lambda x: len([y for y in x if y == 'yes'])/len(x), 'survived')
 tb3f4 = tb3.filter(lambda x: x['gender'] == 'F').aggregate_str(
-    lambda x: len(x)/len([y for y in x if y == 'yes']), 'survived')
+    lambda x: len([y for y in x if y == 'yes'])/len(x), 'survived')
 print('Male surival rate:', tb3f3)
 print('Female surival rate:', tb3f4, '\n')
 
