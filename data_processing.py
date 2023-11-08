@@ -117,7 +117,7 @@ tbj1f1 = tbj1.filter(lambda x: float(x['passes']) > 100)\
     .filter(lambda x: float(x['minutes']) < 200)\
     .filter(lambda x: re.search("ai", x['team']))
 print('Player on a team with “ia” in the team name played less than 200 minutes and made more than 100 passes')
-print(tbj1f1, '\n')
+print(tbj1f1.select(['team', 'surname', 'position']), '\n')
 
 tbj2f1 = tbj1.filter(lambda x: int(x['ranking']) < 10).aggregate(
     lambda x: sum(x)/len(x), 'games')
