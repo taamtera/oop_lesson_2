@@ -152,8 +152,16 @@ tb3f3 = tb3.filter(lambda x: x['gender'] == 'M').aggregate_str(
     lambda x: len([y for y in x if y == 'yes'])/len(x), 'survived')
 tb3f4 = tb3.filter(lambda x: x['gender'] == 'F').aggregate_str(
     lambda x: len([y for y in x if y == 'yes'])/len(x), 'survived')
-print('Male surival rate:', tb3f3)
-print('Female surival rate:', tb3f4, '\n')
+print('The survival rate of male versus female passengers')
+print('Male:', tb3f3)
+print('Female:', tb3f4, '\n')
+
+# Find the total number of male passengers embarked at Southampton
+tb3f5 = tb3.filter(lambda x: x['gender'] == 'M').filter(lambda x: x['embarked'] == 'Southampton').aggregate_str(lambda x: len(x), 'first')
+print('The number of male passengers embarked at Southampton')
+print('passengers embarked:', tb3f5, '\n')
+
+
 
 # table1 = Table('cities', cities)
 # table2 = Table('countries', countries)
