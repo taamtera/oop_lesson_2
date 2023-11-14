@@ -247,16 +247,17 @@ print('Pivot table sorted by embarked,gender, class and aggregated by min fare, 
 [print(i) for i in tb3p1]
 print('')
 
-# Pivot table sorted by position and aggregated by average passes, and average shots:
+#Pivot table sorted by position and aggregated by average passes, and average shots:
 tbj1p1 = tbj1.pivot_table(['position'], ['passes', 'shots'], [lambda x: sum(
     x)/len(x), lambda x: len(x), lambda x: sum(x)/len(x), lambda x: len(x)])
 print('Pivot table sorted by position and aggregated by average passes, and average shots:')
 [print(i) for i in tbj1p1]
 print('')
 
-# Pivot table sorted by coastline and eu by average temp, min latitude, max latitude:
+print('Pivot table sorted by coastline and eu by average temp, min latitude, max latitude:')
 my_table3p1 = my_table3.pivot_table(['coastline', 'EU'], ['temperature', 'latitude', 'latitude'], [
                                     lambda x: sum(x)/len(x), lambda x: min(x), lambda x: max(x)])
 print('Pivot table sorted by coastline and eu by average temp, min latitude, max latitude:')
 [print(i) for i in my_table3p1]
 print('')
+
