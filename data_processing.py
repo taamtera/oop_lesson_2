@@ -121,7 +121,6 @@ class Table:
                 agg.append(filtered.aggregate(agg_funcs[x], y))
             temps.append([list(item.values()), agg])
         return reversed(temps)
-        # return Table(self.table_name + '_pivot', sort)
 
     @property
     def size(self):
@@ -159,7 +158,8 @@ print()
 print("Test join: finding cities in non-EU countries whose temperatures are below 5.0")
 my_table2 = my_DB.search('countries')
 my_table3 = my_table1.join(my_table2, 'country')
-my_table3_filtered = my_table3.filter(lambda x: x['EU'] == 'no').filter(lambda x: float(x['temperature']) < 5.0)
+my_table3_filtered = my_table3.filter(lambda x: x['EU'] == 'no').filter(
+    lambda x: float(x['temperature']) < 5.0)
 print(my_table3_filtered.table)
 print()
 print("Selecting just three fields, city, country, and temperature")
@@ -167,16 +167,21 @@ print(my_table3_filtered.select(['city', 'country', 'temperature']))
 print()
 
 print("Print the min and max temperatures for cities in EU that do not have coastlines")
-my_table3_filtered = my_table3.filter(lambda x: x['EU'] == 'yes').filter(lambda x: x['coastline'] == 'no')
-print("Min temp:", my_table3_filtered.aggregate(lambda x: min(x), 'temperature'))
-print("Max temp:", my_table3_filtered.aggregate(lambda x: max(x), 'temperature'))
+my_table3_filtered = my_table3.filter(
+    lambda x: x['EU'] == 'yes').filter(lambda x: x['coastline'] == 'no')
+print("Min temp:", my_table3_filtered.aggregate(
+    lambda x: min(x), 'temperature'))
+print("Max temp:", my_table3_filtered.aggregate(
+    lambda x: max(x), 'temperature'))
 print()
 
 print("Print the min and max latitude for cities in every country")
 for item in my_table2.table:
-    my_table1_filtered = my_table1.filter(lambda x: x['country'] == item['country'])
+    my_table1_filtered = my_table1.filter(
+        lambda x: x['country'] == item['country'])
     if len(my_table1_filtered.table) >= 1:
-        print(item['country'], my_table1_filtered.aggregate(lambda x: min(x), 'latitude'), my_table1_filtered.aggregate(lambda x: max(x), 'latitude'))
+        print(item['country'], my_table1_filtered.aggregate(lambda x: min(
+            x), 'latitude'), my_table1_filtered.aggregate(lambda x: max(x), 'latitude'))
 print()
 
 my_DB = DB()
@@ -235,18 +240,23 @@ tb3f5 = tb3.filter(lambda x: x['gender'] == 'M').filter(
 print('The number of male passengers embarked at Southampton')
 print('passengers embarked:', tb3f5, '\n')
 
-print('Pivot table sorted by embarked,gender, class and aggregated by min fare, max fare, average fare, and count:')
+# Pivot table sorted by embarked,gender, class and aggregated by min fare, max fare, average fare, and count:
 tb3p1 = tb3.pivot_table(['embarked', 'gender', 'class'], ['fare', 'fare', 'fare', 'last'], [
                         lambda x: min(x), lambda x: max(x), lambda x: sum(x)/len(x), lambda x: len(x)])
+print('Pivot table sorted by embarked,gender, class and aggregated by min fare, max fare, average fare, and count:')
 [print(i) for i in tb3p1]
 print('')
-    
+
+# Pivot table sorted by position and aggregated by average passes, and average shots:
+tbj1p1 = tbj1.pivot_table(['position'], ['passes', 'shots'], [lambda x: sum(
+    x)/len(x), lambda x: len(x), lambda x: sum(x)/len(x), lambda x: len(x)])
 print('Pivot table sorted by position and aggregated by average passes, and average shots:')
-tbj1p1 = tbj1.pivot_table(['position'], ['passes', 'shots'], [lambda x: sum(x)/len(x), lambda x: len(x),lambda x: sum(x)/len(x), lambda x: len(x)])
 [print(i) for i in tbj1p1]
 print('')
 
+# Pivot table sorted by coastline and eu by average temp, min latitude, max latitude:
+my_table3p1 = my_table3.pivot_table(['coastline', 'EU'], ['temperature', 'latitude', 'latitude'], [
+                                    lambda x: sum(x)/len(x), lambda x: min(x), lambda x: max(x)])
 print('Pivot table sorted by coastline and eu by average temp, min latitude, max latitude:')
-my_table3p1 = my_table3.pivot_table(['coastline', 'EU'], ['temperature', 'latitude', 'latitude'], [lambda x: sum(x)/len(x), lambda x: min(x), lambda x: max(x)])
 [print(i) for i in my_table3p1]
 print('')
