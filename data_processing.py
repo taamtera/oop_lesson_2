@@ -75,17 +75,22 @@ class Table:
                 filtered_table.table.append(item1)
         return filtered_table
 
+    def __is_float(self, element):
+        if element is None:
+            return False
+        try:
+            float(element)
+            return True
+        except ValueError:
+            return False
+
     def aggregate(self, function, aggregation_key):
         temps = []
         for item1 in self.table:
-            temps.append(float(item1[aggregation_key]))
-        return function(temps)
-
-    def aggregate_str(self, function, aggregation_key):
-        temps = []
-        ftemps = []
-        for item1 in self.table:
-            temps.append(item1[aggregation_key])
+            if self.__is_float(item1[aggregation_key]):
+                temps.append(float(item1[aggregation_key]))
+            else:
+                temps.append(item1[aggregation_key])
         return function(temps)
 
     def select(self, attributes_list):
@@ -101,10 +106,78 @@ class Table:
     def __str__(self):
         return self.table_name + ':' + str(self.table)
 
+    def pivot_table(self, keys: list, values: list, agg_funcs: list):
+        unique_data_set = {tuple((key, item[key])
+                                 for key in keys) for item in self.table}
+        sorted_data = sorted([dict(item) for item in unique_data_set], key=lambda x: tuple(
+            x[key] for key in reversed(keys)))
+        temps = []
+        for item in sorted_data:
+            filtered = self
+            agg = []
+            for key in item:
+                filtered = filtered.filter(lambda x: x[key] == item[key])
+            for x, y in enumerate(values):
+                agg.append(filtered.aggregate(agg_funcs[x], y))
+            temps.append([list(item.values()), agg])
+        return reversed(temps)
+        # return Table(self.table_name + '_pivot', sort)
+
     @property
     def size(self):
         return len(self.table)
 
+
+table1 = Table('cities', cities)
+table2 = Table('countries', countries)
+my_DB = DB()
+my_DB.insert(table1)
+my_DB.insert(table2)
+my_table1 = my_DB.search('cities')
+
+print("Test filter: only filtering out cities in Italy")
+my_table1_filtered = my_table1.filter(lambda x: x['country'] == 'Italy')
+print(my_table1_filtered)
+print()
+
+print("Test select: only displaying two fields, city and latitude, for cities in Italy")
+my_table1_selected = my_table1_filtered.select(['city', 'latitude'])
+print(my_table1_selected)
+print()
+
+print("Calculting the average temperature without using aggregate for cities in Italy")
+temps = []
+for item in my_table1_filtered.table:
+    temps.append(float(item['temperature']))
+print(sum(temps)/len(temps))
+print()
+
+print("Calculting the average temperature using aggregate for cities in Italy")
+print(my_table1_filtered.aggregate(lambda x: sum(x)/len(x), 'temperature'))
+print()
+
+print("Test join: finding cities in non-EU countries whose temperatures are below 5.0")
+my_table2 = my_DB.search('countries')
+my_table3 = my_table1.join(my_table2, 'country')
+my_table3_filtered = my_table3.filter(lambda x: x['EU'] == 'no').filter(lambda x: float(x['temperature']) < 5.0)
+print(my_table3_filtered.table)
+print()
+print("Selecting just three fields, city, country, and temperature")
+print(my_table3_filtered.select(['city', 'country', 'temperature']))
+print()
+
+print("Print the min and max temperatures for cities in EU that do not have coastlines")
+my_table3_filtered = my_table3.filter(lambda x: x['EU'] == 'yes').filter(lambda x: x['coastline'] == 'no')
+print("Min temp:", my_table3_filtered.aggregate(lambda x: min(x), 'temperature'))
+print("Max temp:", my_table3_filtered.aggregate(lambda x: max(x), 'temperature'))
+print()
+
+print("Print the min and max latitude for cities in every country")
+for item in my_table2.table:
+    my_table1_filtered = my_table1.filter(lambda x: x['country'] == item['country'])
+    if len(my_table1_filtered.table) >= 1:
+        print(item['country'], my_table1_filtered.aggregate(lambda x: min(x), 'latitude'), my_table1_filtered.aggregate(lambda x: max(x), 'latitude'))
+print()
 
 my_DB = DB()
 my_DB.insert(Table('players', players))
@@ -148,68 +221,32 @@ print('First class:', tb3f1)
 print('Third class:', tb3f2, '\n')
 
 # The survival rate of male versus female passengers
-tb3f3 = tb3.filter(lambda x: x['gender'] == 'M').aggregate_str(
+tb3f3 = tb3.filter(lambda x: x['gender'] == 'M').aggregate(
     lambda x: len([y for y in x if y == 'yes'])/len(x), 'survived')
-tb3f4 = tb3.filter(lambda x: x['gender'] == 'F').aggregate_str(
+tb3f4 = tb3.filter(lambda x: x['gender'] == 'F').aggregate(
     lambda x: len([y for y in x if y == 'yes'])/len(x), 'survived')
 print('The survival rate of male versus female passengers')
 print('Male:', tb3f3)
 print('Female:', tb3f4, '\n')
 
 # Find the total number of male passengers embarked at Southampton
-tb3f5 = tb3.filter(lambda x: x['gender'] == 'M').filter(lambda x: x['embarked'] == 'Southampton').aggregate_str(lambda x: len(x), 'first')
+tb3f5 = tb3.filter(lambda x: x['gender'] == 'M').filter(
+    lambda x: x['embarked'] == 'Southampton').aggregate(lambda x: len(x), 'first')
 print('The number of male passengers embarked at Southampton')
 print('passengers embarked:', tb3f5, '\n')
 
+print('Pivot table sorted by embarked,gender, class and aggregated by min fare, max fare, average fare, and count:')
+tb3p1 = tb3.pivot_table(['embarked', 'gender', 'class'], ['fare', 'fare', 'fare', 'last'], [
+                        lambda x: min(x), lambda x: max(x), lambda x: sum(x)/len(x), lambda x: len(x)])
+[print(i) for i in tb3p1]
+print('')
+    
+print('Pivot table sorted by position and aggregated by average passes, and average shots:')
+tbj1p1 = tbj1.pivot_table(['position'], ['passes', 'shots'], [lambda x: sum(x)/len(x), lambda x: len(x),lambda x: sum(x)/len(x), lambda x: len(x)])
+[print(i) for i in tbj1p1]
+print('')
 
-
-# table1 = Table('cities', cities)
-# table2 = Table('countries', countries)
-# my_DB = DB()
-# my_DB.insert(table1)
-# my_DB.insert(table2)
-# my_table1 = my_DB.search('cities')
-
-# print("Test filter: only filtering out cities in Italy")
-# my_table1_filtered = my_table1.filter(lambda x: x['country'] == 'Italy')
-# print(my_table1_filtered)
-# print()
-
-# print("Test select: only displaying two fields, city and latitude, for cities in Italy")
-# my_table1_selected = my_table1_filtered.select(['city', 'latitude'])
-# print(my_table1_selected)
-# print()
-
-# print("Calculting the average temperature without using aggregate for cities in Italy")
-# temps = []
-# for item in my_table1_filtered.table:
-#     temps.append(float(item['temperature']))
-# print(sum(temps)/len(temps))
-# print()
-
-# print("Calculting the average temperature using aggregate for cities in Italy")
-# print(my_table1_filtered.aggregate(lambda x: sum(x)/len(x), 'temperature'))
-# print()
-
-# print("Test join: finding cities in non-EU countries whose temperatures are below 5.0")
-# my_table2 = my_DB.search('countries')
-# my_table3 = my_table1.join(my_table2, 'country')
-# my_table3_filtered = my_table3.filter(lambda x: x['EU'] == 'no').filter(lambda x: float(x['temperature']) < 5.0)
-# print(my_table3_filtered.table)
-# print()
-# print("Selecting just three fields, city, country, and temperature")
-# print(my_table3_filtered.select(['city', 'country', 'temperature']))
-# print()
-
-# print("Print the min and max temperatures for cities in EU that do not have coastlines")
-# my_table3_filtered = my_table3.filter(lambda x: x['EU'] == 'yes').filter(lambda x: x['coastline'] == 'no')
-# print("Min temp:", my_table3_filtered.aggregate(lambda x: min(x), 'temperature'))
-# print("Max temp:", my_table3_filtered.aggregate(lambda x: max(x), 'temperature'))
-# print()
-
-# print("Print the min and max latitude for cities in every country")
-# for item in my_table2.table:
-#     my_table1_filtered = my_table1.filter(lambda x: x['country'] == item['country'])
-#     if len(my_table1_filtered.table) >= 1:
-#         print(item['country'], my_table1_filtered.aggregate(lambda x: min(x), 'latitude'), my_table1_filtered.aggregate(lambda x: max(x), 'latitude'))
-# print()
+print('Pivot table sorted by coastline and eu by average temp, min latitude, max latitude:')
+my_table3p1 = my_table3.pivot_table(['coastline', 'EU'], ['temperature', 'latitude', 'latitude'], [lambda x: sum(x)/len(x), lambda x: min(x), lambda x: max(x)])
+[print(i) for i in my_table3p1]
+print('')
